@@ -31,19 +31,22 @@ The Alloy lexer splits source code into a stream of tokens based on the followin
 
 A program consists of one or more functions. The entry point is always main.
 
-Rust  
+Rust
+```
 import "lib/std\_io.al"
 
 fn main() {  
     ; Code goes here  
     ret  
 }
+```
 
 ### **3.2 Assignments & Arithmetic**
 
 Assignments use the let keyword. Alloy supports both functional-style mnemonics (mapping directly to assembly instructions) and infix math operators.
 
-Rust  
+Rust
+```
 ; Direct Value Load  
 let t0 \= 10           ; li t0, 10  
 let t1 \= 0xFF         ; li t1, 255
@@ -59,48 +62,58 @@ let t4 \= t0 \* t1      ; mul t4, t0, t1
 ; Functional Mnemonic Style (Raw Assembly mapping)  
 let t0 \= add(t1, 5)   ; addi t0, t1, 5  
 let t2 \= slt(t0, t1)  ; Set Less Than
+```
 
 ### **3.3 Memory Access**
 
 Memory instructions (sw, lw, sb, lb, etc.) explicitly use the RISC-V offset syntax offset(base).
 
-Rust  
+Rust
+```
 ; Store Word: Save t0 to stack at offset 0  
 sw(t0, 0(sp))
 
 ; Load Word: Load from stack offset 4 into a0  
 let a0 \= lw(4(sp))
+```
 
 ### **3.4 Control Flow**
 
 Alloy manages labels and branching logic automatically. Note that comparison instructions (like beq, slt) are used as the condition.  
+
 **If / Else:**
 
-Rust  
+Rust
+```
 ; Syntax: if ( COMPARISON ) { BODY }  
 if (beq t0, t1) {  
     ; Runs if t0 \== t1  
 } else {  
     ; Runs otherwise  
 }
+```
 
 **While Loops:**
 
-Rust  
+Rust
+```
 ; Syntax: while ( COMPARISON ) { BODY }  
 while (slt t0, 10) {  
     ; Runs while t0 \< 10  
     let t0 \= t0 \+ 1  
 }
+```
 
 **For Loops:**  
 Uses comma delimiters instead of semicolons.
 
-Rust  
+Rust
+```
 ; Syntax: for ( INIT , CONDITION , STEP ) { BODY }  
 for ( let t0 \= 0 , slt t0, 10 , let t0 \= t0 \+ 1 ) {  
     ; Body code  
 }
+```
 
 **Immediate Comparison Handling:**
 
@@ -111,7 +124,8 @@ for ( let t0 \= 0 , slt t0, 10 , let t0 \= t0 \+ 1 ) {
 
 String literals are allocated in the .data section, and their address is loaded into the target register.
 
-Rust  
+Rust
+```
 ; String Literal  
 let a0 \= "Hello, World\!\\n"  ; Compiler emits .asciz and 'la a0, label'
 
@@ -119,12 +133,14 @@ let a0 \= "Hello, World\!\\n"  ; Compiler emits .asciz and 'la a0, label'
 let a0 \= 1     ; stdout  
 let a7 \= 64    ; sys\_write  
 ecall
+```
 
 ## **4\. Abstract Syntax Tree (AST)**
 
 The AST is the compiler's internal representation of your code. It is strictly typed using Rust enums.
 
-Rust  
+Rust
+```
 pub enum Register { A0, A1, ... T0, T1, ... SP, RA, ... }
 
 pub enum Operand {  
@@ -161,6 +177,7 @@ pub enum Statement {
     Return,  
     Ecall,  
 }
+```
 
 ## **5\. Compiler Architecture**
 
