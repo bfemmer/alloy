@@ -109,7 +109,7 @@ Uses comma delimiters instead of semicolons.
 ```alloy
 ; Syntax: for ( INIT , CONDITION , STEP ) { BODY }
 
-for ( let t0 = 0 , slt t0, 10 , let t0 = t0 \+ 1 ) {  
+for ( let t0 = 0 , slt t0, 10 , let t0 = t0 + 1 ) {  
     ; Body code  
 }
 ```
