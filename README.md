@@ -19,10 +19,10 @@ The Alloy lexer splits source code into a stream of tokens based on the followin
 1. **Keywords:** fn, ret, ecall, let, if, else, while, for, import.  
 2. **Registers:** Explicit RISC-V register names (x0..x31, zero, ra, sp, gp, tp, a0-a7, t0-t6, s0-s11).  
 3. **Integers:**  
-   * **Decimal:** 10, \-5  
+   * **Decimal:** 10, -5  
    * **Hexadecimal:** 0xFF  
 4. **Strings:** Enclosed in double quotes "Hello World". The compiler automatically manages storage in the .data section.  
-5. **Operators:** \+, \-, \*, /, %, \=, ,, (, ), {, }.  
+5. **Operators:** +, -, *, /, %, =, ,, (, ), {, }.  
 6. **Comments:** Lines starting with ; are ignored.
 
 ## **3\. The Grammar (Syntax)**
@@ -46,20 +46,20 @@ Assignments use the let keyword. Alloy supports both functional-style mnemonics 
 
 ```alloy
 ; Direct Value Load  
-let t0 \= 10           ; li t0, 10  
-let t1 \= 0xFF         ; li t1, 255
+let t0 = 10           ; li t0, 10  
+let t1 = 0xFF         ; li t1, 255
 
 ; Register Copy  
-let t2 \= t0           ; mv t2, t0
+let t2 = t0           ; mv t2, t0
 
 ; Infix Math (Syntactic Sugar)  
-let t0 \= t1 \+ 5       ; addi t0, t1, 5  
-let t1 \= t2 \- t3      ; sub t1, t2, t3  
-let t4 \= t0 \* t1      ; mul t4, t0, t1
+let t0 = t1 + 5       ; addi t0, t1, 5  
+let t1 = t2 - t3      ; sub t1, t2, t3  
+let t4 = t0 * t1      ; mul t4, t0, t1
 
 ; Functional Mnemonic Style (Raw Assembly mapping)  
-let t0 \= add(t1, 5)   ; addi t0, t1, 5  
-let t2 \= slt(t0, t1)  ; Set Less Than
+let t0 = add(t1, 5)   ; addi t0, t1, 5  
+let t2 = slt(t0, t1)  ; Set Less Than
 ```
 
 ### **3.3 Memory Access**
