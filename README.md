@@ -2,7 +2,7 @@
 
 ### ***Structured like C, Built like Assembly***
 
-## **1\. Introduction & Philosophy**
+## **1. Introduction & Philosophy**
 
 Alloy is a compiled systems programming language designed to occupy the unique educational gap between raw RISC-V Assembly and C.
 
@@ -12,7 +12,7 @@ Alloy is a compiled systems programming language designed to occupy the unique e
 **Target Architecture:** RISC-V (64-bit)  
 **Output:** Native Executables (via GCC linkage)
 
-## **2\. The Lexicon (Tokens)**
+## **2. The Lexicon (Tokens)**
 
 The Alloy lexer splits source code into a stream of tokens based on the following rules:
 
@@ -25,7 +25,7 @@ The Alloy lexer splits source code into a stream of tokens based on the followin
 5. **Operators:** +, -, *, /, %, =, ,, (, ), {, }.  
 6. **Comments:** Lines starting with ; are ignored.
 
-## **3\. The Grammar (Syntax)**
+## **3. The Grammar (Syntax)**
 
 ### **3.1 Program Structure**
 
@@ -133,7 +133,34 @@ let a7 = 64    ; sys_write
 ecall
 ```
 
-## **4\. Abstract Syntax Tree (AST)**
+### **3.6 Shared Libraries and Imports**
+
+Shared libraries are written in the Alloy programming language and imported into your projects as source files (shared libraries are not compiled like .so files). When you import "std_io.al", the compiler literally pastes the code into your file. The rationale for this design decision is that since the compiler is transpiling the source code to RISC-V assembly and then handing a single massive .S file to GCC, Alloy is effectively performing a Unity Build (or a Monolithic Compilation) which results in compile-time performance advantages while avoiding the complexity and overhead of creating a symbol metadata (or equivalent header file) system for the compiler to look up signatures of library functions at compile time.
+
+Alloy has a default import system for libraries stored in the /lib folder of the root source directory.
+
+```plaintext
+/my_project
+  /lib
+    std_io.al
+    std_math.al
+  main.al
+  compiler
+```
+
+Importing libraries are accomplished as follows:
+
+```alloy
+import "std_io"
+```
+
+However, libraries can be stored in any path and then referenced directly as follows:
+
+```alloy
+import "../lib/std_io"
+```
+
+## **4. Abstract Syntax Tree (AST)**
 
 The AST is the compiler's internal representation of your code. It is strictly typed using Rust enums.
 
@@ -176,7 +203,7 @@ pub enum Statement {
 }
 ```
 
-## **5\. Compiler Architecture**
+## **5. Compiler Architecture**
 
 The Alloy compiler follows a classic 5-stage pipeline:
 
@@ -215,7 +242,7 @@ The Alloy compiler follows a classic 5-stage pipeline:
 * **Action:** Invokes the external GCC toolchain (riscv64-linux-gnu-gcc).  
 * **Output:** A fully linked executable binary.
 
-## **6\. Runtime Model & Register Convention**
+## **6. Runtime Model & Register Convention**
 
 Since Alloy provides direct register access, users must adhere to the standard RISC-V calling convention to ensure their code interacts correctly with libraries and system calls.
 
