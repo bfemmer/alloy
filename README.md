@@ -31,8 +31,7 @@ The Alloy lexer splits source code into a stream of tokens based on the followin
 
 A program consists of one or more functions. The entry point is always main.
 
-Alloy
-```
+```alloy
 import "lib/std_io.al"
 
 fn main() {  
@@ -45,8 +44,7 @@ fn main() {
 
 Assignments use the let keyword. Alloy supports both functional-style mnemonics (mapping directly to assembly instructions) and infix math operators.
 
-Alloy
-```
+```alloy
 ; Direct Value Load  
 let t0 \= 10           ; li t0, 10  
 let t1 \= 0xFF         ; li t1, 255
@@ -68,8 +66,7 @@ let t2 \= slt(t0, t1)  ; Set Less Than
 
 Memory instructions (sw, lw, sb, lb, etc.) explicitly use the RISC-V offset syntax offset(base).
 
-Alloy
-```
+```alloy
 ; Store Word: Save t0 to stack at offset 0  
 sw(t0, 0(sp))
 
@@ -83,8 +80,7 @@ Alloy manages labels and branching logic automatically. Note that comparison ins
 
 **If / Else:**
 
-Alloy
-```
+```alloy
 ; Syntax: if ( COMPARISON ) { BODY }  
 if (beq t0, t1) {  
     ; Runs if t0 \== t1  
@@ -95,8 +91,7 @@ if (beq t0, t1) {
 
 **While Loops:**
 
-Alloy
-```
+```alloy
 ; Syntax: while ( COMPARISON ) { BODY }  
 while (slt t0, 10) {  
     ; Runs while t0 \< 10  
@@ -107,8 +102,7 @@ while (slt t0, 10) {
 **For Loops:**  
 Uses comma delimiters instead of semicolons.
 
-Alloy
-```
+```alloy
 ; Syntax: for ( INIT , CONDITION , STEP ) { BODY }  
 for ( let t0 \= 0 , slt t0, 10 , let t0 \= t0 \+ 1 ) {  
     ; Body code  
@@ -124,8 +118,7 @@ for ( let t0 \= 0 , slt t0, 10 , let t0 \= t0 \+ 1 ) {
 
 String literals are allocated in the .data section, and their address is loaded into the target register.
 
-Alloy
-```
+```alloy
 ; String Literal  
 let a0 \= "Hello, World\!\\n"  ; Compiler emits .asciz and 'la a0, label'
 
@@ -139,8 +132,7 @@ ecall
 
 The AST is the compiler's internal representation of your code. It is strictly typed using Rust enums.
 
-Rust
-```
+```rust
 pub enum Register { A0, A1, ... T0, T1, ... SP, RA, ... }
 
 pub enum Operand {  
