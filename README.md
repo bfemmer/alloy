@@ -67,11 +67,13 @@ let t2 = slt(t0, t1)  ; Set Less Than
 Memory instructions (sw, lw, sb, lb, etc.) explicitly use the RISC-V offset syntax offset(base).
 
 ```alloy
-; Store Word: Save t0 to stack at offset 0  
+; Store Word: Save t0 to stack at offset 0
+ 
 sw(t0, 0(sp))
 
-; Load Word: Load from stack offset 4 into a0  
-let a0 \= lw(4(sp))
+; Load Word: Load from stack offset 4 into a0
+ 
+let a0 = lw(4(sp))
 ```
 
 ### **3.4 Control Flow**
@@ -81,9 +83,10 @@ Alloy manages labels and branching logic automatically. Note that comparison ins
 **If / Else:**
 
 ```alloy
-; Syntax: if ( COMPARISON ) { BODY }  
+; Syntax: if ( COMPARISON ) { BODY }
+
 if (beq t0, t1) {  
-    ; Runs if t0 \== t1  
+    ; Runs if t0 == t1  
 } else {  
     ; Runs otherwise  
 }
@@ -92,10 +95,11 @@ if (beq t0, t1) {
 **While Loops:**
 
 ```alloy
-; Syntax: while ( COMPARISON ) { BODY }  
+; Syntax: while ( COMPARISON ) { BODY }
+  
 while (slt t0, 10) {  
-    ; Runs while t0 \< 10  
-    let t0 \= t0 \+ 1  
+    ; Runs while t0 < 10  
+    let t0 = t0 + 1  
 }
 ```
 
@@ -103,8 +107,9 @@ while (slt t0, 10) {
 Uses comma delimiters instead of semicolons.
 
 ```alloy
-; Syntax: for ( INIT , CONDITION , STEP ) { BODY }  
-for ( let t0 \= 0 , slt t0, 10 , let t0 \= t0 \+ 1 ) {  
+; Syntax: for ( INIT , CONDITION , STEP ) { BODY }
+
+for ( let t0 = 0 , slt t0, 10 , let t0 = t0 \+ 1 ) {  
     ; Body code  
 }
 ```
@@ -120,11 +125,11 @@ String literals are allocated in the .data section, and their address is loaded 
 
 ```alloy
 ; String Literal  
-let a0 \= "Hello, World\!\\n"  ; Compiler emits .asciz and 'la a0, label'
+let a0 = "Hello, World!\n"  ; Compiler emits .asciz and 'la a0, label'
 
 ; System Call  
-let a0 \= 1     ; stdout  
-let a7 \= 64    ; sys\_write  
+let a0 = 1     ; stdout  
+let a7 = 64    ; sys_write  
 ecall
 ```
 
@@ -142,13 +147,13 @@ pub enum Operand {
 }
 
 pub enum Expression {  
-    // Represents: let t0 \= add(t1, t2) OR let t0 \= t1 \+ t2  
-    AluCall { opcode: String, operands: Vec\<Operand\> },  
+    // Represents: let t0 = add(t1, t2) OR let t0 = t1 + t2  
+    AluCall { opcode: String, operands: Vec<Operand> },  
       
-    // Represents: let t0 \= lw(0(sp))  
+    // Represents: let t0 = lw(0(sp))  
     Load { opcode: String, offset: i32, base: Register },  
       
-    // Represents: let t0 \= 5  
+    // Represents: let t0 = 5  
     Simple(Operand),  
 }
 
@@ -160,12 +165,12 @@ pub enum Statement {
     Store { opcode: String, src: Register, offset: i32, base: Register },  
       
     // Flow Control  
-    If { condition\_op: String, left: Register, right: Operand, then\_block: Vec\<Statement\>, else\_block: Option\<Vec\<Statement\>\> },  
-    While { condition\_op: String, left: Register, right: Operand, body: Vec\<Statement\> },  
-    For { init: Box\<Statement\>, condition\_op: String, cond\_left: Register, cond\_right: Operand, step: Box\<Statement\>, body: Vec\<Statement\> },  
+    If { condition_op: String, left: Register, right: Operand, then_block: Vec<Statement>, else_block: Option<Vec<Statement>> },  
+    While { condition_op: String, left: Register, right: Operand, body: Vec<Statement> },  
+    For { init: Box<Statement>, condition_op: String, cond_left: Register, cond_right: Operand, step: Box<Statement>, body: Vec<Statement> },  
       
     // Function Calls & Misc  
-    Call { func\_name: String },  
+    Call { func_name: String },  
     Return,  
     Ecall,  
 }
@@ -184,7 +189,7 @@ The Alloy compiler follows a classic 5-stage pipeline:
 
 * **Input:** Raw Source String.  
 * **Action:** Converts text into a vector of strings. Handles splitting operands while preserving quoted strings and negative numbers.  
-* *Example:* let t0 \= \-5 $\\rightarrow$ \["let", "t0", "=", "-5"\]
+* *Example:* let t0 = -5 $\\rightarrow$ ["let", "t0", "=", "-5"]
 
 ### **Phase 3: Parsing**
 
@@ -192,7 +197,7 @@ The Alloy compiler follows a classic 5-stage pipeline:
 * **Action:** Recursive Descent Parser. Iterates through tokens to build the **AST**.  
 * **Logic:**  
   * Detects fn to start a function.  
-  * Detects let to parse assignments (handling both add() syntax and infix \+).  
+  * Detects let to parse assignments (handling both add() syntax and infix +).  
   * Detects control structures (if, while), recursively parsing their bodies into blocks.
 
 ### **Phase 4: Code Generation**
@@ -200,9 +205,9 @@ The Alloy compiler follows a classic 5-stage pipeline:
 * **Input:** AST.  
 * **Action:** Walks the AST and emits RISC-V assembly text (.S).  
 * **Key Responsibilities:**  
-  * **String Table:** Collects all string literals encountered, assigning them labels (.L\_str\_0), and emitting them in the .data section.  
-  * **Label Management:** Generates unique labels for loops (.L\_while\_start\_1) and conditionals (.L\_else\_2).  
-  * **Operand Prep:** Detects immediate comparisons (e.g., t0 \< 10\) and injects instructions to load 10 into t6 before branching.
+  * **String Table:** Collects all string literals encountered, assigning them labels (.L_str_0), and emitting them in the .data section.  
+  * **Label Management:** Generates unique labels for loops (.L_while_start_1) and conditionals (.L_else_2).  
+  * **Operand Prep:** Detects immediate comparisons (e.g., t0 < 10) and injects instructions to load 10 into t6 before branching.
 
 ### **Phase 5: Assembly & Linking (Driver)**
 
