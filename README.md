@@ -1,13 +1,22 @@
 # **The Alloy Programming Language**
 
-### ***Structured like C, Built like Assembly***
+### ***Language Specification and Reference***
 
-## **1. Introduction & Philosophy**
+## **1 Introduction & Philosophy**
+
+_***Structured like C, Built like Assembly***_
 
 Alloy is a compiled systems programming language designed to occupy the unique educational gap between raw RISC-V Assembly and C.
 
-* **Below C:** Alloy does **not** manage memory or registers for you. There is no register allocator. If you write let t0 \= 10, you are manually occupying the hardware register t0. You must manually manage the stack pointer (sp) when calling functions.  
-* **Above Assembly:** Alloy abstracts away the tedious flow control of assembly. Instead of manually creating jump labels (.L\_loop\_start) and calculating offsets, you use high-level structures like if, while, for, and mathematical expressions (t0 \+ t1).
+High-level programming languages hide the machine; raw assembly makes software development painfully tedious. Alloy balances these forces by maintaining a strict 1:1 relationship with the bare metal's register file while abstracting away the boilerplate of control flow structures and address resolution.
+
+**Below C: Zero-Abstraction Registers**
+
+Alloy does not feature a register allocator, variable scoping rules, or automated lifetime management. When you type let t0 = 10, you are directly commanding the physical hardware register t0. If a function uses registers, it is up to the developer to preserve them on the stack pointer (sp). 
+
+**Above Assembly - Stuctured Control Flow:**
+
+Alloy completely eliminates the need to write manual jump labels, conditional branch calculation steps, and memory alignment bookkeeping for strings and globals. You write clean, nested if, while, and for statements, alongside natural mathematical expressions (t0 = t1 + t2), and the compiler cleanly lowers them into verified RISC-V assembly blocks.
 
 **Target Architecture:** RISC-V (64-bit)  
 **Output:** Native Executables (via GCC linkage)
