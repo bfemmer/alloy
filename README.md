@@ -14,14 +14,14 @@ High-level programming languages hide the machine; raw assembly makes software d
 
 Alloy does not feature a register allocator, variable scoping rules, or automated lifetime management. When you type let t0 = 10, you are directly commanding the physical hardware register t0. If a function uses registers, it is up to the developer to preserve them on the stack pointer (sp). 
 
-**Above Assembly - Stuctured Control Flow:**
+**Above Assembly: Stuctured Control Flow**
 
 Alloy completely eliminates the need to write manual jump labels, conditional branch calculation steps, and memory alignment bookkeeping for strings and globals. You write clean, nested if, while, and for statements, alongside natural mathematical expressions (t0 = t1 + t2), and the compiler cleanly lowers them into verified RISC-V assembly blocks.
 
 **Target Architecture:** RISC-V (64-bit)  
 **Output:** Native Executables (via GCC linkage)
 
-## **2. The Lexicon (Tokens)**
+## **2 The Lexicon (Tokens)**
 
 The Alloy lexer splits source code into a stream of tokens based on the following rules:
 
@@ -34,7 +34,7 @@ The Alloy lexer splits source code into a stream of tokens based on the followin
 5. **Operators:** +, -, *, /, %, =, ,, (, ), {, }.  
 6. **Comments:** Lines starting with ; are ignored.
 
-## **3. The Grammar (Syntax)**
+## **3 The Grammar (Syntax)**
 
 ### **3.1 Program Structure**
 
@@ -169,7 +169,7 @@ However, libraries can be stored in any path and then referenced directly as fol
 import "../lib/std_io"
 ```
 
-## **4. Abstract Syntax Tree (AST)**
+## **4 Abstract Syntax Tree (AST)**
 
 The AST is the compiler's internal representation of your code. It is strictly typed using Rust enums.
 
@@ -212,7 +212,7 @@ pub enum Statement {
 }
 ```
 
-## **5. Compiler Architecture**
+## **5 Compiler Architecture**
 
 The Alloy compiler follows a classic 5-stage pipeline:
 
@@ -267,3 +267,30 @@ Since Alloy provides direct register access, users must adhere to the standard R
 ### **Compiler-Reserved Registers**
 
 * **t6**: The Alloy Code Generator uses t6 as a scratchpad when you compare a register to a number (e.g., if (beq t0, 5)). **Avoid using t6 for long-term storage inside loops or conditionals.**
+
+## **6 Installation**
+### **6.1 Compile Binary**
+First, generate a highly optimized, standalone production binary of Alloy. Run this command inside your root project directory:
+
+``` bash
+cargo build --release
+```
+### **6.2 Choose Install Path**
+
+You have two options for where to place the binary: System-wide (available to all users, requires sudo) or User-local (isolated to your user account, recommended).
+
+### **6.2.1 Option A: User-Local Installation (Recommended)***
+
+Moving the executable to a hidden .local/bin folder in your home directory keeps your system clean and doesn't require root permissions. First, create the local bin directory if it doesn't exist yet:
+
+``` bash
+mkdir -p ~/.local/bin
+```
+Then, copy the compiled Alloy binary and the config.txt configuration files into it:
+
+``` bash
+cp ./target/release/alloy ~/.local/bin/
+cp ./config.txt ~/.local/bin/
+```
+
+### **6.2.2 Option B: User-Local Installation (Recommended)***
