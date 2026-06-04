@@ -11,7 +11,31 @@ use std::collections::HashMap;
 // CONFIGURATION
 // ==========================================
 
-const ASSEMBLER_CMD: &str = "riscv64-unknown-linux-gnu-gcc";
+fn load_assembler_command() -> String {
+    let config_path = Path::new("config.txt");
+    let default_cmd = "riscv64-unknown-elf-gcc".to_string();
+
+    if !config_path.exists() {
+        return default_cmd; // Fallback if config doesn't exist
+    }
+
+    if let Ok(content) = fs::read_to_string(config_path) {
+        for line in content.lines() {
+            let trimmed = line.trim();
+            if trimmed.starts_with('#') || trimmed.is_empty() {
+                continue; // Skip comments and empty lines
+            }
+            if trimmed.starts_with("ASSEMBLER_CMD=") {
+                let parts: Vec<&str> = trimmed.split('=').collect();
+                if parts.len() == 2 {
+                    return parts[1].trim().to_string();
+                }
+            }
+        }
+    }
+
+    default_cmd
+}
 
 // ==========================================
 // 1. THE AST
@@ -814,7 +838,10 @@ fn main() {
         eprintln!("Usage: {} <source.al>", args[0]); 
         process::exit(1); 
     }
+
     let input_path = Path::new(&args[1]);
+
+    let assembler_cmd = load_assembler_command();
 
     // 1. Preprocess
     let source_code = match preprocess(input_path) {
@@ -852,7 +879,7 @@ fn main() {
 
     println!("Compiling to executable: {}", exe_path.display());
 
-    let output = process::Command::new(ASSEMBLER_CMD)
+    let output = process::Command::new(&assembler_cmd)
         .arg(&asm_path)
         .arg("-o")
         .arg(&exe_path)
@@ -866,12 +893,12 @@ fn main() {
             } else {
                 eprintln!("❌ Assembler Error:");
                 eprintln!("{}", String::from_utf8_lossy(&out.stderr));
-                eprintln!("(Note: Ensure you have '{}' installed)", ASSEMBLER_CMD);
+                eprintln!("(Note: Ensure you have '{}' installed)", assembler_cmd);
             }
         },
         Err(e) => {
             eprintln!("❌ Failed to execute assembler: {}", e);
-            eprintln!("(Check if '{}' is in your PATH)", ASSEMBLER_CMD);
+            eprintln!("(Check if '{}' is in your PATH)", assembler_cmd);
         }
     }
 }
