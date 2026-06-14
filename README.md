@@ -80,12 +80,12 @@ Alloy manages code elements across three distinct structural types:
 Constants are evaluated at compile time and substitute numbers directly into code instructions wherever they are called.
 
 ```alloy
-const MAX\_LIMIT \= 100  
-const BASE\_ADDR \= 0x4000
+const MAX_LIMIT = 100  
+const BASE_ADDR = 0x4000
 
 fn main() {  
-    let t0 \= MAX\_LIMIT   \# Lowers directly to: li t0, 100  
-    let t1 \= BASE\_ADDR   \# Lowers directly to: li t1, 16384  
+    let t0 = MAX_LIMIT   # Lowers directly to: li t0, 100  
+    let t1 = BASE_ADDR   # Lowers directly to: li t1, 16384  
     ret  
 }
 ```
@@ -95,12 +95,12 @@ fn main() {
 Aliases swap human-readable names for hardware registers. They can be defined globally or locally at the top of code blocks.
 
 ```alloy
-alias loop\_index \= t0  
-alias output\_ptr \= a0
+alias loop_index = t0  
+alias output_ptr = a0
 
 fn main() {  
-    let loop\_index \= 0   \# Moves 0 into register t0  
-    let output\_ptr \= 1   \# Moves 1 into register a0  
+    let loop_index = 0   # Moves 0 into register t0  
+    let output_ptr = 1   # Moves 1 into register a0  
     ret  
 }
 ```alloy
@@ -110,15 +110,15 @@ fn main() {
 The data keyword permanently assigns space inside the executable's .data memory block. Alloy supports primitive variables (Scalars) and continuous memory segments (Arrays).
 
 ```alloy
-const BUFFER\_SIZE \= 64
+const BUFFER_SIZE = 64
 
-data score \= 0              \# Single 32\-bit word initialized to 0  
-data system\_buffer\[64\]      \# Reserves 64 bytes of sequential zeroed storage  
-data large\_array\[BUFFER\_SIZE\] \# Array sizing using compile-time constants
+data score = 0              # Single 32\-bit word initialized to 0  
+data system_buffer\[64\]      # Reserves 64 bytes of sequential zeroed storage  
+data large_array\[BUFFER_SIZE\] # Array sizing using compile-time constants
 
 fn main() {  
-    \# Loading a global variable pointer into a register  
-    let t0 \= score          \# la t0, score (loads memory address)  
+    # Loading a global variable pointer into a register  
+    let t0 = score          # la t0, score (loads memory address)  
     ret  
 }
 ```
@@ -129,26 +129,26 @@ Alloy offers two syntactic pathways for calculation instructions: **Infix Arithm
 
 ```alloy
 fn main() {  
-    \# \--- INFIX MATH EXPRESSIONS \---  
-    let t0 \= t1 \+ t2        \# Lowered to: add t0, t1, t2  
-    let t0 \= t1 \+ 5         \# Lowered to: addi t0, t1, 5  
-    let t3 \= t4 \- 12        \# Lowered to: addi t3, t4, \-12  
-    let t5 \= t0 \* t1        \# Staged and multiplied via register flags
+    # --- INFIX MATH EXPRESSIONS ---  
+    let t0 = t1 + t2        # Lowered to: add t0, t1, t2  
+    let t0 = t1 + 5         # Lowered to: addi t0, t1, 5  
+    let t3 = t4 - 12        # Lowered to: addi t3, t4, -12  
+    let t5 = t0 * t1        # Staged and multiplied via register flags
 
-    \# \--- FUNCTIONAL MNEMONIC SYNTAX \---  
-    let t0 \= add(t1, t2)    \# Identical to 't1 \+ t2'  
-    let t1 \= slt(t0, t5)    \# Set Less Than instruction matching assembly  
+    # --- FUNCTIONAL MNEMONIC SYNTAX ---  
+    let t0 = add(t1, t2)    # Identical to 't1 + t2'  
+    let t1 = slt(t0, t5)    # Set Less Than instruction matching assembly  
       
-    \# \--- MEMORY LOAD FORMAT \---  
-    \# To read from an address, use mnemonic formats: opcode(offset, base\_register)  
-    let t0 \= lw(0, sp)      \# Load Word from the top of the stack pointer  
-    let t1 \= lb(4, a0)      \# Load Byte from an offset of 4 bytes from address a0  
+    # --- MEMORY LOAD FORMAT   
+    # To read from an address, use mnemonic formats: opcode(offset, base_register)  
+    let t0 = lw(0, sp)      # Load Word from the top of the stack pointer  
+    let t1 = lb(4, a0)      # Load Byte from an offset of 4 bytes from address a0  
       
-    \# \--- MEMORY STORE FORMAT \---  
-    \# Storing to memory does not use 'let' because it does not update a register.  
-    \# Syntax: opcode(src\_register, offset(base\_register))  
-    sw(t0, 0(sp))           \# Store Word from t0 directly to the stack pointer offset 0  
-    sb(t1, 8(s0))           \# Store Byte from t1 to memory offset 8 from s0  
+    # --- MEMORY STORE FORMAT ---  
+    # Storing to memory does not use 'let' because it does not update a register.  
+    # Syntax: opcode(src_register, offset(base_register))  
+    sw(t0, 0(sp))           # Store Word from t0 directly to the stack pointer offset 0  
+    sb(t1, 8(s0))           # Store Byte from t1 to memory offset 8 from s0  
     ret  
 }
 ```
@@ -164,12 +164,12 @@ Conditional logic checks an explicit infix expression. If the comparison fails, 
 
 ```alloy
 fn main() {  
-    if (t0 \== zero) {  
-        let a0 \= "Value is zero\!\\n"  
-        call io\_print  
+    if (t0 == zero) {  
+        let a0 = "Value is zero!\n"  
+        call io_print  
     } else {  
-        let a0 \= "Value is non-zero\!\\n"  
-        call io\_print  
+        let a0 = "Value is non-zero!\n"  
+        call io_print  
     }  
     ret  
 }
@@ -181,10 +181,10 @@ while blocks re-evaluate a comparison rule at the top of every cycle, branching 
 
 ```alloy
 fn main() {  
-    let t0 \= 0  
-    while (t0 \< 10) {  
-        \# Execute loop actions...  
-        let t0 \= t0 \+ 1  
+    let t0 = 0  
+    while (t0 < 10) {  
+        # Execute loop actions...  
+        let t0 = t0 + 1  
     }  
     ret  
 }
@@ -196,10 +196,10 @@ To match standard C-style loop familiarity, Alloy separates the initial statemen
 
 ```alloy
 fn main() {  
-    \# for ( INIT\_STATEMENT ; CONDITION\_EXPRESSION ; STEP\_STATEMENT )  
-    for (let t0 \= 0; t0 \<= 10; let t0 \= t0 \+ 1) {  
-        let a0 \= t0  
-        call print\_int  
+    # for ( INIT_STATEMENT ; CONDITION_EXPRESSION ; STEP_STATEMENT )  
+    for (let t0 = 0; t0 <= 10; let t0 = t0 + 1) {  
+        let a0 = t0  
+        call print_int  
     }  
     ret  
 }
@@ -213,48 +213,48 @@ Because Alloy interfaces directly with the operating system kernel via RISC-V ec
 
 To read incoming data streams from standard input, the hardware register states must be configured as follows right before an ecall is triggered:
 
-* a0 \= 0 (File Descriptor: stdin)  
-* a1 \= **Buffer Address Pointer** (The starting memory location where characters will be stored)  
-* a2 \= **Max Length** (The maximum number of bytes the kernel is permitted to read)  
-* a7 \= 63 (The explicit Linux Syscall ID for sys\_read)
+* a0 = 0 (File Descriptor: stdin)  
+* a1 = **Buffer Address Pointer** (The starting memory location where characters will be stored)  
+* a2 = **Max Length** (The maximum number of bytes the kernel is permitted to read)  
+* a7 = 63 (The explicit Linux Syscall ID for sys_read)
 
 #### **Continuous Memory Buffering on the Stack**
 
 Since Alloy does not feature automated dynamic heap allocations, developers must manually reserve temporary buffer spaces by growing the Stack Pointer (sp) downwards.
 
 ```alloy
-\# \--- STANDARD IO READ FUNCTION \---  
-\# Inputs: a1 \= target buffer address, a2 \= maximum bytes to read  
-\# Outputs: a0 \= actual number of bytes read by the OS kernel  
-fn io\_read(a1, a2) {  
-    let a0 \= 0    \# Set file descriptor to stdin  
-    let a7 \= 63   \# Set syscall to sys\_read  
+# --- STANDARD IO READ FUNCTION ---  
+# Inputs: a1 = target buffer address, a2 = maximum bytes to read  
+# Outputs: a0 = actual number of bytes read by the OS kernel  
+fn io_read(a1, a2) {  
+    let a0 = 0    # Set file descriptor to stdin  
+    let a7 = 63   # Set syscall to sys_read  
     ecall  
     ret  
 }
 
 fn main() {  
-    \# 1. Manually carve out a 64\-byte character buffer space on the Stack Frame  
-    let sp \= sp \- 64
+    # 1. Manually carve out a 64\-byte character buffer space on the Stack Frame  
+    let sp = sp - 64
 
-    \# 2. Print a console prompt using standard output handlers  
-    let a0 \= "Enter command sequence: "  
-    call io\_print
+    # 2. Print a console prompt using standard output handlers  
+    let a0 = "Enter command sequence: "  
+    call io_print
 
-    \# 3. Establish the arguments for the input stream read call  
-    let a1 \= sp \+ 0    \# Pass the address pointing to the top of our stack buffer  
-    let a2 \= 63        \# Reserve space for 63 text characters \+ 1 null terminator byte  
-    call io\_read       \# Transfer execution control to the OS kernel reader
+    # 3. Establish the arguments for the input stream read call  
+    let a1 = sp + 0    # Pass the address pointing to the top of our stack buffer  
+    let a2 = 63        # Reserve space for 63 text characters + 1 null terminator byte  
+    call io_read       # Transfer execution control to the OS kernel reader
 
-    \# 4. Echo the received characters back to the user  
-    let a0 \= "Acknowledged: "  
-    call io\_print  
+    # 4. Echo the received characters back to the user  
+    let a0 = "Acknowledged: "  
+    call io_print  
       
-    let a0 \= sp \+ 0    \# Point to our manual stack buffer base address  
-    call io\_print      \# Print the captured buffer back out to stdout
+    let a0 = sp + 0    # Point to our manual stack buffer base address  
+    call io_print      # Print the captured buffer back out to stdout
 
-    \# 5. Reclaim stack frame space  
-    let sp \= sp \+ 64  
+    # 5. Reclaim stack frame space  
+    let sp = sp + 64  
     ret  
 }
 ```
@@ -264,42 +264,42 @@ fn main() {
 When processing numeric parameters from standard input, the captured buffer contains raw text characters rather than evaluations ("123" $\\rightarrow$ ASCII bytes 0x31, 0x32, 0x33). To convert these elements into hardware-compatible integer states, a sequential mapping loop must parse the bytes:
 
 ```alloy
-\# \--- ASCII TO INTEGER (atoi) \---  
-\# Input: a0 \= pointer to string buffer  
-\# Output: a0 \= parsed physical 32\-bit integer value  
+# --- ASCII TO INTEGER (atoi) ---  
+# Input: a0 = pointer to string buffer  
+# Output: a0 = parsed physical 32-bit integer value  
 fn atoi(a0) {  
-    let a1 \= 0 \# Initialize our running total accumulator to zero  
-    call \_atoi\_processing\_loop  
+    let a1 = 0 # Initialize our running total accumulator to zero  
+    call _atoi_processing_loop  
     ret  
 }
 
-fn \_atoi\_processing\_loop(a0, a1) {  
+fn _atoi_processing_loop(a0, a1) {  
     let t0 \= lb(0, a0) \# Load the active character byte
 
-    \# Halt iteration on a Null Terminator (0) or a Newline marker (10)  
-    if (t0 \== zero) { let a0 \= a1 ret }  
-    let t1 \= 10  
-    if (t0 \== t1) { let a0 \= a1 ret }
+    # Halt iteration on a Null Terminator (0) or a Newline marker (10)  
+    if (t0 == zero) { let a0 = a1 ret }  
+    let t1 = 10  
+    if (t0 == t1) { let a0 = a1 ret }
 
-    \# Character Validation: Confirm the active byte sits between '0' (48) and '9' (57)  
-    let t1 \= 48  
-    if (t0 \< t1) { let a0 \= a1 ret }  
-    let t1 \= 58  
-    if (t0 \< t1) {  
-        \# Extract numeric value by subtracting the ASCII bias factor  
-        let t0 \= t0 \- 48  
+    # Character Validation: Confirm the active byte sits between '0' (48) and '9' (57)  
+    let t1 = 48  
+    if (t0 < t1) { let a0 = a1 ret }  
+    let t1 = 58  
+    if (t0 < t1) {  
+        # Extract numeric value by subtracting the ASCII bias factor  
+        let t0 = t0 - 48  
           
-        \# Accumulator Formula: total \= (total \* 10) \+ active\_digit  
-        let t2 \= 10  
-        let a1 \= a1 \* t2  
-        let a1 \= a1 \+ t0
+        # Accumulator Formula: total = (total * 10) + active_digit  
+        let t2 = 10  
+        let a1 = a1 * t2  
+        let a1 = a1 + t0
 
-        \# Increment data address pointer and loop recursively  
-        let a0 \= a0 \+ 1  
-        call \_atoi\_processing\_loop  
+        # Increment data address pointer and loop recursively  
+        let a0 = a0 + 1  
+        call _atoi_processing_loop  
         ret  
     } else {  
-        let a0 \= a1  
+        let a0 = a1  
         ret  
     }  
 }
@@ -314,25 +314,25 @@ Every function call naturally increments stack tracking depth. Because Alloy exp
 When entering any function via a call instruction, the CPU instantly overwrites the Return Address (ra) register. If your function calls another subroutine, **you will corrupt ra and crash the program unless you preserve it on the stack frame.**
 
 ```alloy
-fn leaf\_function() {  
-    \# This function calls nothing else (Leaf Node).  
-    \# It can safely use temporaries without saving 'ra'.  
-    let t0 \= 10 \+ 20  
-    ret                     \# Safe return using intact 'ra'  
+fn leaf_function() {  
+    # This function calls nothing else (Leaf Node).  
+    # It can safely use temporaries without saving 'ra'.  
+    let t0 = 10 + 20  
+    ret                     # Safe return using intact 'ra'  
 }
 
-fn nested\_function() {  
-    \# This function calls other logic. We MUST allocate a stack frame\!  
-    let sp \= sp \- 16        \# Grow stack down (aligned to 16 bytes)  
-    sw(ra, 12(sp))          \# Save original return address safely  
-    sw(s0, 8(sp))           \# Save frame base register if needed  
+fn nested_function() {  
+    # This function calls other logic. We MUST allocate a stack frame!  
+    let sp = sp - 16        # Grow stack down (aligned to 16 bytes)  
+    sw(ra, 12(sp))          # Save original return address safely  
+    sw(s0, 8(sp))           # Save frame base register if needed  
       
-    call leaf\_function      \# 'ra' is updated with our local position  
+    call leaf_function      # 'ra' is updated with our local position  
       
-    lw(s0, 8(sp))           \# Restore tracking structures  
-    lw(ra, 12(sp))          \# Restore original destination address  
-    let sp \= sp \+ 16        \# Reclaim stack space  
-    ret                     \# Jumps back to correct calling position  
+    lw(s0, 8(sp))           # Restore tracking structures  
+    lw(ra, 12(sp))          # Restore original destination address  
+    let sp = sp + 16        # Reclaim stack space  
+    ret                     # Jumps back to correct calling position  
 }
 ```
 
@@ -344,10 +344,10 @@ fn nested\_function() {
 | x1 | ra | Return Address tracking. Updated by call, used by ret. |
 | x2 | sp | Stack Pointer. Points to the current bottom of active memory. |
 | x8 | s0 / fp | Frame pointer or Saved Register storage. |
-| x10 \- x17 | a0 \- a7 | Argument passing channels. a0 acts as the function return value. a7 stores target System Call IDs. |
-| x5 \- x7 | t0 \- t2 | Volatile Temporaries. Free-use registers. |
-| x28 \- x29 | t3 \- t4 | Volatile Temporaries. Free-use registers. |
+| x10 - x17 | a0 - a7 | Argument passing channels. a0 acts as the function return value. a7 stores target System Call IDs. |
+| x5 - x7 | t0 - t2 | Volatile Temporaries. Free-use registers. |
+| x28 - x29 | t3 - t4 | Volatile Temporaries. Free-use registers. |
 | x30 | t5 | **Compiler-Reserved Scratchpad.** Used for global memory loads. |
 | x31 | t6 | **Compiler-Reserved Scratchpad.** Used for structural loop/immediate comparisons. |
-| x18 \- x27 | s2 \- s11 | Saved Non-Volatile Registers. Must be restored if mutated. |
+| x18 - x27 | s2 - s11 | Saved Non-Volatile Registers. Must be restored if mutated. |
 
