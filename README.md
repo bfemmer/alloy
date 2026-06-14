@@ -112,9 +112,9 @@ The data keyword permanently assigns space inside the executable's .data memory 
 ```alloy
 const BUFFER_SIZE = 64
 
-data score = 0              # Single 32\-bit word initialized to 0  
-data system_buffer\[64\]      # Reserves 64 bytes of sequential zeroed storage  
-data large_array\[BUFFER_SIZE\] # Array sizing using compile-time constants
+data score = 0              # Single 32-bit word initialized to 0  
+data system_buffer[64]      # Reserves 64 bytes of sequential zeroed storage  
+data large_array[BUFFER_SIZE] # Array sizing using compile-time constants
 
 fn main() {  
     # Loading a global variable pointer into a register  
@@ -234,7 +234,7 @@ fn io_read(a1, a2) {
 }
 
 fn main() {  
-    # 1. Manually carve out a 64\-byte character buffer space on the Stack Frame  
+    # 1. Manually carve out a 64-byte character buffer space on the Stack Frame  
     let sp = sp - 64
 
     # 2. Print a console prompt using standard output handlers  
@@ -274,7 +274,7 @@ fn atoi(a0) {
 }
 
 fn _atoi_processing_loop(a0, a1) {  
-    let t0 \= lb(0, a0) \# Load the active character byte
+    let t0 = lb(0, a0) # Load the active character byte
 
     # Halt iteration on a Null Terminator (0) or a Newline marker (10)  
     if (t0 == zero) { let a0 = a1 ret }  
