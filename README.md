@@ -1,296 +1,353 @@
-# **The Alloy Programming Language**
 
-### ***Language Specification and Reference***
 
-## **1 Introduction & Philosophy**
+# **The Alloy Programming Language Manual**
 
-_***Structured like C, Built like Assembly***_
+### ***Official Language Specification and Reference***
 
-Alloy is a compiled systems programming language designed to occupy the unique educational gap between raw RISC-V Assembly and C.
+## **1\. Introduction & Philosophy**
 
-High-level programming languages hide the machine; raw assembly makes software development painfully tedious. Alloy balances these forces by maintaining a strict 1:1 relationship with the bare metal's register file while abstracting away the boilerplate of control flow structures and address resolution.
+Alloy is a compiled systems programming language designed to occupy the unique educational gap between raw RISC-V Assembly and C.  
+High-level programming languages hide the machine; raw assembly makes software development painfully tedious. Alloy balances these forces by maintaining a strict **1:1 relationship with the bare metal's register file** while abstracting away the boilerplate of control flow structures and address resolution.
 
-**Below C: Zero-Abstraction Registers**
+### **Below C: Zero-Abstraction Registers**
 
-Alloy does not feature a register allocator, variable scoping rules, or automated lifetime management. When you type let t0 = 10, you are directly commanding the physical hardware register t0. If a function uses registers, it is up to the developer to preserve them on the stack pointer (sp). 
+Alloy does **not** feature a register allocator, variable scoping rules, or automated lifetime management. When you type let t0 \= 10, you are directly commanding the physical hardware register t0. If a function uses registers, it is up to the developer to preserve them on the stack pointer (sp).
 
-**Above Assembly: Stuctured Control Flow**
+### **Above Assembly: Structured Control Flow**
 
-Alloy completely eliminates the need to write manual jump labels, conditional branch calculation steps, and memory alignment bookkeeping for strings and globals. You write clean, nested if, while, and for statements, alongside natural mathematical expressions (t0 = t1 + t2), and the compiler cleanly lowers them into verified RISC-V assembly blocks.
+Alloy completely eliminates the need to write manual jump labels, conditional branch calculation steps, and memory alignment bookkeeping for strings and globals. You write clean, nested if, while, and for statements, alongside natural mathematical expressions (t0 \= t1 \+ t2), and the compiler cleanly lowers them into verified RISC-V assembly blocks.  
+**Target Architecture:** RISC-V (64-bit Base Integer Architecture)  
+**Compilation Target:** Fully-linked static native binaries (orchestrated via GCC toolchains)
 
-**Target Architecture:** RISC-V (64-bit)  
-**Output:** Native Executables (via GCC linkage)
+## **2\. Compiler Architecture & Execution Pipeline**
 
-## **2 The Lexicon (Tokens)**
+The Alloy compiler operates as an orchestrated multi-stage driver, taking text source files and outputting high-performance native binaries.
 
-The Alloy lexer splits source code into a stream of tokens based on the following rules:
+### **2.1 Preprocessing & Module Imports**
 
-1. **Keywords:** fn, ret, ecall, let, if, else, while, for, import.  
-2. **Registers:** Explicit RISC-V register names (x0..x31, zero, ra, sp, gp, tp, a0-a7, t0-t6, s0-s11).  
-3. **Integers:**  
-   * **Decimal:** 10, -5  
-   * **Hexadecimal:** 0xFF  
-4. **Strings:** Enclosed in double quotes "Hello World". The compiler automatically manages storage in the .data section.  
-5. **Operators:** +, -, *, /, %, =, ,, (, ), {, }.  
-6. **Comments:** Lines starting with ; are ignored.
+When processing a source file, the compiler scans for import "filename" or import "filename.al" strings. The preprocessor handles imports using a three-tiered resolution hierarchy:
 
-## **3 The Grammar (Syntax)**
+1. Searches relative to the location of the active file.  
+2. Searches within a local lib/ directory relative to the source.  
+3. Searches a global system library directory relative to the compiler executable itself.
 
-### **3.1 Program Structure**
+All discovered modules are recursively flattened into a single unified source string, allowing simple multi-file project layouts.
 
-A program consists of one or more functions. The entry point is always main.
+### **2.2 Tokenization (Lexing)**
+
+The stream of raw text characters is processed into discrete strings (tokens). The lexer breaks structures on whitespace boundaries and functional delimiters. Crucially, the lexer scans ahead to bind compound logical operators (\<=, \>=, \==, \!=) into single, coherent tokens, ensuring clean parsing phases later.
+
+### **2.3 Parsing & AST Validation**
+
+Alloy utilizes a Recursive Descent Parser to convert token sequences into a strongly-typed Abstract Syntax Tree (AST). During this phase, compile-time tracking tables evaluate definitions for constants, global memory layouts, and register aliasing before generating statements.
+
+### **2.4 Code Generation & Hardware Constraint Protection**
+
+The code generator transforms the verified AST directly into GNU-compatible RISC-V assembly code (.S). A major design feature of this stage is **Automatic Instruction Legalization**.  
+Certain physical RISC-V extensions (such as the M-Extension for multiplication and division) explicitly forbid the use of raw numeric values (immediates) or global memory labels within operations (e.g., mul t0, t1, 10 is an invalid CPU instruction).  
+Alloy continuously checks for these hardware limits, automatically generating code to stage problematic values inside hidden scratchpad registers (**t5** and **t6**) right before executing the calculation.
+
+### **2.5 Assembly & Linkage**
+
+The generated .S file is automatically fed into an internal system command runner using the toolchain binary specified in the local config.txt file (e.g., riscv64-unknown-linux-gnu-gcc or riscv64-unknown-elf-gcc). The compilation includes the \-static flag, ensuring all core libraries are embedded directly inside the binary.
+
+## **3\. The Lexicon & Core Types**
+
+### **3.1 Token Typings**
+
+* **Comments:** Any text following a \# character up to the end of the line is ignored by the lexer.  
+* **Keywords:** fn, ret, ecall, let, if, else, while, for, import, const, alias, data.  
+* **Registers:** x0 through x31, alongside official ABI aliases (zero, ra, sp, gp, tp, a0-a7, t0-t6, s0-s11).  
+* **Infix Operators:** \==, \!=, \<, \>, \<=, \>=, \+, \-, \*, /, %.  
+* **Numeric Radix Literals:** \* *Decimal:* Standard format numbers (e.g., 42, \-12).  
+  * *Hexadecimal:* Prefixed with 0x (e.g., 0xFF, 0x1000).  
+* **Strings:** Wrapped in double quotes (e.g., "Result: \\n"). Stored as null-terminated character arrays (.asciz) automatically.
+
+### **3.2 Symbol Tables: Compile-Time vs Runtime Storage**
+
+Alloy manages code elements across three distinct structural types:
+
+1. **Constants (const):** Pure immutable values mapped during compilation. They consume no physical RAM.  
+2. **Aliases (alias):** Compile-time alternative labels pointing directly to hardware registers.  
+3. **Globals (data):** Static variables initialized or reserved directly within the execution binary's persistent runtime memory layout.
+
+## **4\. Syntax & Grammar Reference**
+
+### **4.1 Top-Level Declarations**
+
+#### **Constants (const)**
+
+Constants are evaluated at compile time and substitute numbers directly into code instructions wherever they are called.
 
 ```alloy
-import "lib/std_io.al"
+const MAX\_LIMIT \= 100  
+const BASE\_ADDR \= 0x4000
 
 fn main() {  
-    ; Code goes here  
+    let t0 \= MAX\_LIMIT   \# Lowers directly to: li t0, 100  
+    let t1 \= BASE\_ADDR   \# Lowers directly to: li t1, 16384  
     ret  
 }
 ```
 
-### **3.2 Assignments & Arithmetic**
+#### **Aliases (alias)**
 
-Assignments use the let keyword. Alloy supports both functional-style mnemonics (mapping directly to assembly instructions) and infix math operators.
-
-```alloy
-; Direct Value Load  
-let t0 = 10           ; li t0, 10  
-let t1 = 0xFF         ; li t1, 255
-
-; Register Copy  
-let t2 = t0           ; mv t2, t0
-
-; Infix Math (Syntactic Sugar)  
-let t0 = t1 + 5       ; addi t0, t1, 5  
-let t1 = t2 - t3      ; sub t1, t2, t3  
-let t4 = t0 * t1      ; mul t4, t0, t1
-
-; Functional Mnemonic Style (Raw Assembly mapping)  
-let t0 = add(t1, 5)   ; addi t0, t1, 5  
-let t2 = slt(t0, t1)  ; Set Less Than
-```
-
-### **3.3 Memory Access**
-
-Memory instructions (sw, lw, sb, lb, etc.) explicitly use the RISC-V offset syntax offset(base).
+Aliases swap human-readable names for hardware registers. They can be defined globally or locally at the top of code blocks.
 
 ```alloy
-; Store Word: Save t0 to stack at offset 0
- 
-sw(t0, 0(sp))
+alias loop\_index \= t0  
+alias output\_ptr \= a0
 
-; Load Word: Load from stack offset 4 into a0
- 
-let a0 = lw(4(sp))
-```
+fn main() {  
+    let loop\_index \= 0   \# Moves 0 into register t0  
+    let output\_ptr \= 1   \# Moves 1 into register a0  
+    ret  
+}
+```alloy
 
-### **3.4 Control Flow**
+#### **Global Data Allocations (data)**
 
-Alloy manages labels and branching logic automatically. Note that comparison instructions (like beq, slt) are used as the condition.  
-
-**If / Else:**
+The data keyword permanently assigns space inside the executable's .data memory block. Alloy supports primitive variables (Scalars) and continuous memory segments (Arrays).
 
 ```alloy
-; Syntax: if ( COMPARISON ) { BODY }
+const BUFFER\_SIZE \= 64
 
-if (beq t0, t1) {  
-    ; Runs if t0 == t1  
-} else {  
-    ; Runs otherwise  
+data score \= 0              \# Single 32\-bit word initialized to 0  
+data system\_buffer\[64\]      \# Reserves 64 bytes of sequential zeroed storage  
+data large\_array\[BUFFER\_SIZE\] \# Array sizing using compile-time constants
+
+fn main() {  
+    \# Loading a global variable pointer into a register  
+    let t0 \= score          \# la t0, score (loads memory address)  
+    ret  
 }
 ```
 
-**While Loops:**
+### **4.2 Assignments, Arithmetic, and Load/Store Operations**
+
+Alloy offers two syntactic pathways for calculation instructions: **Infix Arithmetic** and **Functional Mnemonics**.
 
 ```alloy
-; Syntax: while ( COMPARISON ) { BODY }
-  
-while (slt t0, 10) {  
-    ; Runs while t0 < 10  
-    let t0 = t0 + 1  
-}
-```
+fn main() {  
+    \# \--- INFIX MATH EXPRESSIONS \---  
+    let t0 \= t1 \+ t2        \# Lowered to: add t0, t1, t2  
+    let t0 \= t1 \+ 5         \# Lowered to: addi t0, t1, 5  
+    let t3 \= t4 \- 12        \# Lowered to: addi t3, t4, \-12  
+    let t5 \= t0 \* t1        \# Staged and multiplied via register flags
 
-**For Loops:**  
-Uses comma delimiters instead of semicolons.
-
-```alloy
-; Syntax: for ( INIT , CONDITION , STEP ) { BODY }
-
-for ( let t0 = 0 , slt t0, 10 , let t0 = t0 + 1 ) {  
-    ; Body code  
-}
-```
-
-**Immediate Comparison Handling:**
-
-* Assembly forbids comparing a register to a raw number (e.g., bge t0, 10).  
-* **Compiler Magic:** Alloy automatically detects this. It generates code to load the immediate 10 into the reserved scratch register **t6**, and then compares t0 vs t6.
-
-### **3.5 System Calls & Strings**
-
-String literals are allocated in the .data section, and their address is loaded into the target register.
-
-```alloy
-; String Literal  
-let a0 = "Hello, World!\n"  ; Compiler emits .asciz and 'la a0, label'
-
-; System Call  
-let a0 = 1     ; stdout  
-let a7 = 64    ; sys_write  
-ecall
-```
-
-### **3.6 Shared Libraries and Imports**
-
-Shared libraries are written in the Alloy programming language and imported into your projects as source files (shared libraries are not compiled like .so files). When you import "std_io.al", the compiler literally pastes the code into your file. The rationale for this design decision is that since the compiler is transpiling the source code to RISC-V assembly and then handing a single massive .S file to GCC, Alloy is effectively performing a Unity Build (or a Monolithic Compilation) which results in compile-time performance advantages while avoiding the complexity and overhead of creating a symbol metadata (or equivalent header file) system for the compiler to look up signatures of library functions at compile time.
-
-Alloy has a default import system for libraries stored in the /lib folder of the root source directory.
-
-```plaintext
-/my_project
-  /lib
-    std_io.al
-    std_math.al
-  main.al
-  compiler
-```
-
-Importing libraries are accomplished as follows:
-
-```alloy
-import "std_io"
-```
-
-However, libraries can be stored in any path and then referenced directly as follows:
-
-```alloy
-import "../lib/std_io"
-```
-
-## **4 Abstract Syntax Tree (AST)**
-
-The AST is the compiler's internal representation of your code. It is strictly typed using Rust enums.
-
-```rust
-pub enum Register { A0, A1, ... T0, T1, ... SP, RA, ... }
-
-pub enum Operand {  
-    Reg(Register),  
-    Imm(i32),  
-    Str(String),  
-}
-
-pub enum Expression {  
-    // Represents: let t0 = add(t1, t2) OR let t0 = t1 + t2  
-    AluCall { opcode: String, operands: Vec<Operand> },  
+    \# \--- FUNCTIONAL MNEMONIC SYNTAX \---  
+    let t0 \= add(t1, t2)    \# Identical to 't1 \+ t2'  
+    let t1 \= slt(t0, t5)    \# Set Less Than instruction matching assembly  
       
-    // Represents: let t0 = lw(0(sp))  
-    Load { opcode: String, offset: i32, base: Register },  
+    \# \--- MEMORY LOAD FORMAT \---  
+    \# To read from an address, use mnemonic formats: opcode(offset, base\_register)  
+    let t0 \= lw(0, sp)      \# Load Word from the top of the stack pointer  
+    let t1 \= lb(4, a0)      \# Load Byte from an offset of 4 bytes from address a0  
       
-    // Represents: let t0 = 5  
-    Simple(Operand),  
-}
-
-pub enum Statement {  
-    // Assignment  
-    Let { target: Register, value: Expression },  
-      
-    // Memory Store  
-    Store { opcode: String, src: Register, offset: i32, base: Register },  
-      
-    // Flow Control  
-    If { condition_op: String, left: Register, right: Operand, then_block: Vec<Statement>, else_block: Option<Vec<Statement>> },  
-    While { condition_op: String, left: Register, right: Operand, body: Vec<Statement> },  
-    For { init: Box<Statement>, condition_op: String, cond_left: Register, cond_right: Operand, step: Box<Statement>, body: Vec<Statement> },  
-      
-    // Function Calls & Misc  
-    Call { func_name: String },  
-    Return,  
-    Ecall,  
+    \# \--- MEMORY STORE FORMAT \---  
+    \# Storing to memory does not use 'let' because it does not update a register.  
+    \# Syntax: opcode(src\_register, offset(base\_register))  
+    sw(t0, 0(sp))           \# Store Word from t0 directly to the stack pointer offset 0  
+    sb(t1, 8(s0))           \# Store Byte from t1 to memory offset 8 from s0  
+    ret  
 }
 ```
 
-## **5 Compiler Architecture**
+### **4.3 Control Flow & Logical Operators**
 
-The Alloy compiler follows a classic 5-stage pipeline:
+Alloy supports high-level logical comparison notation inside all control flow blocks.  
+**Hardware Note:** RISC-V hardware cannot natively handle immediate values on the left side of comparisons, nor does it possess native \> or \<= branch instructions. The Alloy compiler handles this automatically. If a comparison involves an immediate value (e.g., t0 \<= 10), the compiler passes a pseudo-opcode to the code generator, which automatically leverages the **t6** register to stage the immediate safely before emitting the branch.
 
-### **Phase 1: Preprocessing**
+#### **Conditionals (if / else)**
 
-* **Input:** Source file (main.al).  
-* **Action:** Scans for import "filename" directives. It recursively reads the target files and merges them into a single raw string of source code.
+Conditional logic checks an explicit infix expression. If the comparison fails, execution jumps around or into the alternative code block.
 
-### **Phase 2: Tokenization (Lexing)**
-
-* **Input:** Raw Source String.  
-* **Action:** Converts text into a vector of strings. Handles splitting operands while preserving quoted strings and negative numbers.  
-* *Example:* let t0 = -5 $\\rightarrow$ ["let", "t0", "=", "-5"]
-
-### **Phase 3: Parsing**
-
-* **Input:** Token Vector.  
-* **Action:** Recursive Descent Parser. Iterates through tokens to build the **AST**.  
-* **Logic:**  
-  * Detects fn to start a function.  
-  * Detects let to parse assignments (handling both add() syntax and infix +).  
-  * Detects control structures (if, while), recursively parsing their bodies into blocks.
-
-### **Phase 4: Code Generation**
-
-* **Input:** AST.  
-* **Action:** Walks the AST and emits RISC-V assembly text (.S).  
-* **Key Responsibilities:**  
-  * **String Table:** Collects all string literals encountered, assigning them labels (.L_str_0), and emitting them in the .data section.  
-  * **Label Management:** Generates unique labels for loops (.L_while_start_1) and conditionals (.L_else_2).  
-  * **Operand Prep:** Detects immediate comparisons (e.g., t0 < 10) and injects instructions to load 10 into t6 before branching.
-
-### **Phase 5: Assembly & Linking (Driver)**
-
-* **Input:** Generated .S file.  
-* **Action:** Invokes the external GCC toolchain (riscv64-linux-gnu-gcc).  
-* **Output:** A fully linked executable binary.
-
-## **6. Runtime Model & Register Convention**
-
-Since Alloy provides direct register access, users must adhere to the standard RISC-V calling convention to ensure their code interacts correctly with libraries and system calls.
-
-| Register | Alloy Name | Role | Notes |
-| :---- | :---- | :---- | :---- |
-| x0 | zero | Hardwired Zero | Always 0\. Writing to it does nothing. |
-| x1 | ra | Return Address | Saved automatically by call. **Must** save to stack if calling other functions. |
-| x2 | sp | Stack Pointer | Manually managed. Grow down (subtract), shrink up (add). |
-| x10-x17 | a0-a7 | Arguments / Return | a0 is return value. a7 is syscall ID. |
-| x5-x7, x28-x31 | t0-t6 | Temporaries | t6 is used by the compiler for immediate comparisons. |
-| x8, x9, x18-x27 | s0-s11 | Saved Registers | Preserved across calls. |
-
-### **Compiler-Reserved Registers**
-
-* **t6**: The Alloy Code Generator uses t6 as a scratchpad when you compare a register to a number (e.g., if (beq t0, 5)). **Avoid using t6 for long-term storage inside loops or conditionals.**
-
-## **6 Installation**
-### **6.1 Compile Binary**
-First, generate a highly optimized, standalone production binary of Alloy. Run this command inside your root project directory:
-
-``` bash
-cargo build --release
-```
-### **6.2 Choose Install Path**
-
-You have two options for where to place the binary: System-wide (available to all users, requires sudo) or User-local (isolated to your user account, recommended).
-
-### **6.2.1 Option A: User-Local Installation (Recommended)***
-
-Moving the executable to a hidden .local/bin folder in your home directory keeps your system clean and doesn't require root permissions. First, create the local bin directory if it doesn't exist yet:
-
-``` bash
-mkdir -p ~/.local/bin
-```
-Then, copy the compiled Alloy binary and the config.txt configuration files into it:
-
-``` bash
-cp ./target/release/alloy ~/.local/bin/
-cp ./config.txt ~/.local/bin/
+```alloy
+fn main() {  
+    if (t0 \== zero) {  
+        let a0 \= "Value is zero\!\\n"  
+        call io\_print  
+    } else {  
+        let a0 \= "Value is non-zero\!\\n"  
+        call io\_print  
+    }  
+    ret  
+}
 ```
 
-### **6.2.2 Option B: User-Local Installation (Recommended)***
+#### **While Loops (while)**
+
+while blocks re-evaluate a comparison rule at the top of every cycle, branching past the end label when the expression evaluates to false.
+
+```alloy
+fn main() {  
+    let t0 \= 0  
+    while (t0 \< 10) {  
+        \# Execute loop actions...  
+        let t0 \= t0 \+ 1  
+    }  
+    ret  
+}
+```
+
+#### **For Loops (for)**
+
+To match standard C-style loop familiarity, Alloy separates the initial statement, comparison expression, and incremental step statement using **semicolons (;)**:
+
+```alloy
+fn main() {  
+    \# for ( INIT\_STATEMENT ; CONDITION\_EXPRESSION ; STEP\_STATEMENT )  
+    for (let t0 \= 0; t0 \<= 10; let t0 \= t0 \+ 1) {  
+        let a0 \= t0  
+        call print\_int  
+    }  
+    ret  
+}
+```
+
+### **4.4 Input/Output and Standard Input (stdin)**
+
+Because Alloy interfaces directly with the operating system kernel via RISC-V ecall mechanics, capturing user input from stdin is handled by invoking the Linux **System Read** syscall (sys\_read, Syscall \#63).
+
+#### **The Input Mechanism (sys\_read)**
+
+To read incoming data streams from standard input, the hardware register states must be configured as follows right before an ecall is triggered:
+
+* a0 \= 0 (File Descriptor: stdin)  
+* a1 \= **Buffer Address Pointer** (The starting memory location where characters will be stored)  
+* a2 \= **Max Length** (The maximum number of bytes the kernel is permitted to read)  
+* a7 \= 63 (The explicit Linux Syscall ID for sys\_read)
+
+#### **Continuous Memory Buffering on the Stack**
+
+Since Alloy does not feature automated dynamic heap allocations, developers must manually reserve temporary buffer spaces by growing the Stack Pointer (sp) downwards.
+
+```alloy
+\# \--- STANDARD IO READ FUNCTION \---  
+\# Inputs: a1 \= target buffer address, a2 \= maximum bytes to read  
+\# Outputs: a0 \= actual number of bytes read by the OS kernel  
+fn io\_read(a1, a2) {  
+    let a0 \= 0    \# Set file descriptor to stdin  
+    let a7 \= 63   \# Set syscall to sys\_read  
+    ecall  
+    ret  
+}
+
+fn main() {  
+    \# 1. Manually carve out a 64\-byte character buffer space on the Stack Frame  
+    let sp \= sp \- 64
+
+    \# 2. Print a console prompt using standard output handlers  
+    let a0 \= "Enter command sequence: "  
+    call io\_print
+
+    \# 3. Establish the arguments for the input stream read call  
+    let a1 \= sp \+ 0    \# Pass the address pointing to the top of our stack buffer  
+    let a2 \= 63        \# Reserve space for 63 text characters \+ 1 null terminator byte  
+    call io\_read       \# Transfer execution control to the OS kernel reader
+
+    \# 4. Echo the received characters back to the user  
+    let a0 \= "Acknowledged: "  
+    call io\_print  
+      
+    let a0 \= sp \+ 0    \# Point to our manual stack buffer base address  
+    call io\_print      \# Print the captured buffer back out to stdout
+
+    \# 5. Reclaim stack frame space  
+    let sp \= sp \+ 64  
+    ret  
+}
+```
+
+#### **ASCII to Integer Evaluation (atoi)**
+
+When processing numeric parameters from standard input, the captured buffer contains raw text characters rather than evaluations ("123" $\\rightarrow$ ASCII bytes 0x31, 0x32, 0x33). To convert these elements into hardware-compatible integer states, a sequential mapping loop must parse the bytes:
+
+```alloy
+\# \--- ASCII TO INTEGER (atoi) \---  
+\# Input: a0 \= pointer to string buffer  
+\# Output: a0 \= parsed physical 32\-bit integer value  
+fn atoi(a0) {  
+    let a1 \= 0 \# Initialize our running total accumulator to zero  
+    call \_atoi\_processing\_loop  
+    ret  
+}
+
+fn \_atoi\_processing\_loop(a0, a1) {  
+    let t0 \= lb(0, a0) \# Load the active character byte
+
+    \# Halt iteration on a Null Terminator (0) or a Newline marker (10)  
+    if (t0 \== zero) { let a0 \= a1 ret }  
+    let t1 \= 10  
+    if (t0 \== t1) { let a0 \= a1 ret }
+
+    \# Character Validation: Confirm the active byte sits between '0' (48) and '9' (57)  
+    let t1 \= 48  
+    if (t0 \< t1) { let a0 \= a1 ret }  
+    let t1 \= 58  
+    if (t0 \< t1) {  
+        \# Extract numeric value by subtracting the ASCII bias factor  
+        let t0 \= t0 \- 48  
+          
+        \# Accumulator Formula: total \= (total \* 10) \+ active\_digit  
+        let t2 \= 10  
+        let a1 \= a1 \* t2  
+        let a1 \= a1 \+ t0
+
+        \# Increment data address pointer and loop recursively  
+        let a0 \= a0 \+ 1  
+        call \_atoi\_processing\_loop  
+        ret  
+    } else {  
+        let a0 \= a1  
+        ret  
+    }  
+}
+```
+
+## **5\. ABI Call Architectures & Core Memory Map**
+
+Every function call naturally increments stack tracking depth. Because Alloy exposes machine access directly, users must closely follow the standard RISC-V Application Binary Interface (ABI) to safely isolate function contexts.
+
+### **5.1 Function Calling Convention**
+
+When entering any function via a call instruction, the CPU instantly overwrites the Return Address (ra) register. If your function calls another subroutine, **you will corrupt ra and crash the program unless you preserve it on the stack frame.**
+
+```alloy
+fn leaf\_function() {  
+    \# This function calls nothing else (Leaf Node).  
+    \# It can safely use temporaries without saving 'ra'.  
+    let t0 \= 10 \+ 20  
+    ret                     \# Safe return using intact 'ra'  
+}
+
+fn nested\_function() {  
+    \# This function calls other logic. We MUST allocate a stack frame\!  
+    let sp \= sp \- 16        \# Grow stack down (aligned to 16 bytes)  
+    sw(ra, 12(sp))          \# Save original return address safely  
+    sw(s0, 8(sp))           \# Save frame base register if needed  
+      
+    call leaf\_function      \# 'ra' is updated with our local position  
+      
+    lw(s0, 8(sp))           \# Restore tracking structures  
+    lw(ra, 12(sp))          \# Restore original destination address  
+    let sp \= sp \+ 16        \# Reclaim stack space  
+    ret                     \# Jumps back to correct calling position  
+}
+```
+
+### **5.2 System Register Reference Map**
+
+| Register ID | ABI Designation | Architectural Role inside Alloy Codebases |
+| :---- | :---- | :---- |
+| x0 | zero | Hardwired Constant Zero. Writes are safely discarded. |
+| x1 | ra | Return Address tracking. Updated by call, used by ret. |
+| x2 | sp | Stack Pointer. Points to the current bottom of active memory. |
+| x8 | s0 / fp | Frame pointer or Saved Register storage. |
+| x10 \- x17 | a0 \- a7 | Argument passing channels. a0 acts as the function return value. a7 stores target System Call IDs. |
+| x5 \- x7 | t0 \- t2 | Volatile Temporaries. Free-use registers. |
+| x28 \- x29 | t3 \- t4 | Volatile Temporaries. Free-use registers. |
+| x30 | t5 | **Compiler-Reserved Scratchpad.** Used for global memory loads. |
+| x31 | t6 | **Compiler-Reserved Scratchpad.** Used for structural loop/immediate comparisons. |
+| x18 \- x27 | s2 \- s11 | Saved Non-Volatile Registers. Must be restored if mutated. |
+
