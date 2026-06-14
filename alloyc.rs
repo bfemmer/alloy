@@ -38,7 +38,7 @@ fn load_assembler_command() -> String {
 }
 
 // ==========================================
-// 1. THE AST
+// AST
 // ==========================================
 
 #[derive(Debug, Clone, PartialEq)]
@@ -54,7 +54,7 @@ pub enum Operand {
     Reg(Register),
     Imm(i32),
     Str(String),
-    Label(String), // <--- NEW: For referring to global names
+    Label(String), // global names
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -113,7 +113,7 @@ pub struct Program {
 }
 
 // ==========================================
-// 2. THE LEXER
+// LEXER
 // ==========================================
 
 fn tokenize(input: &str) -> Vec<String> {
@@ -134,7 +134,7 @@ fn tokenize(input: &str) -> Vec<String> {
             }
         } else {
             match c {
-                ';' => {
+                '#' => {
                     while let Some(&next_c) = chars.peek() {
                         if next_c == '\n' { break; }
                         chars.next();
@@ -148,8 +148,22 @@ fn tokenize(input: &str) -> Vec<String> {
                     in_string = true;
                     current_token.push('"');
                 },
-                // Added '[' and ']' for array syntax
-                '(' | ')' | '{' | '}' | '[' | ']' | ',' | '=' | '+' | '-' | '*' | '/' | '%' => {
+                '=' | '<' | '>' | '!' => {
+                    if !current_token.is_empty() {
+                        tokens.push(current_token.clone());
+                        current_token.clear();
+                    }
+                    
+                    // Peek ahead to see if this is a compound operator (==, <=, >=, !=)
+                    if let Some(&'=') = chars.peek() {
+                        let mut compound = c.to_string();
+                        compound.push(chars.next().unwrap()); // Consume the '='
+                        tokens.push(compound);
+                    } else {
+                        tokens.push(c.to_string()); // Standard single =, <, > operator
+                    }
+                },
+                '(' | ')' | '{' | '}' | '[' | ']' | ',' | ';' | '+' | '-' | '*' | '/' | '%' => {
                     if !current_token.is_empty() {
                         tokens.push(current_token.clone());
                         current_token.clear();
@@ -171,7 +185,7 @@ fn tokenize(input: &str) -> Vec<String> {
 }
 
 // ==========================================
-// 3. THE PARSER
+// PARSER
 // ==========================================
 
 struct Parser {
@@ -196,6 +210,19 @@ impl Parser {
             Some(t) if t == expected => Ok(()),
             Some(t) => Err(format!("Expected '{}', found '{}'", expected, t)),
             None => Err(format!("Expected '{}', found EOF", expected)),
+        }
+    }
+
+    fn translate_operator(op: &str) -> (String, bool) {
+        match op {
+            "==" => ("beq".to_string(), false),
+            "!=" => ("bne".to_string(), false),
+            "<"  => ("blt".to_string(), false),
+            ">=" => ("bge".to_string(), false),
+            // Hardware limits: Swap operands for these two
+            ">"  => ("blt".to_string(), true),  // t0 > t1  becomes  t1 < t0
+            "<=" => ("bge".to_string(), true),  // t0 <= t1 becomes  t1 >= t0
+            _    => (op.to_string(), false),    // Fallback for raw mnemonics (beq, blt, etc.)
         }
     }
 
@@ -369,18 +396,135 @@ impl Parser {
                  Ok(Statement::Call { func_name })
             },
             
+            // "for" => {
+            //     self.consume("(")?;
+            //     let init = Box::new(self.parse_statement()?);
+            //     self.consume(",")?;
+                
+            //     let condition_op = self.tokens.next().ok_or("Expected condition op")?;
+            //     let left_str = self.tokens.next().ok_or("Expected reg")?;
+            //     let cond_left = self.parse_register(&left_str)?;
+            //     if self.peek() == Some(&",".to_string()) { self.consume(",")?; }
+            //     let cond_right = self.parse_operand()?;
+                
+            //     self.consume(",")?;
+            //     let step = Box::new(self.parse_statement()?);
+            //     self.consume(")")?;
+                
+            //     self.consume("{")?;
+            //     let body = self.parse_block()?;
+            //     self.consume("}")?;
+            //     Ok(Statement::For { init, condition_op, cond_left, cond_right, step, body })
+            // },
+
+            // "while" => {
+            //     self.consume("(")?;
+            //     let condition_op = self.tokens.next().ok_or("Expected op")?;
+            //     let left_str = self.tokens.next().ok_or("Expected reg")?;
+            //     let left = self.parse_register(&left_str)?;
+            //     if self.peek() == Some(&",".to_string()) { self.consume(",")?; }
+            //     let right = self.parse_operand()?;
+            //     self.consume(")")?;
+            //     self.consume("{")?;
+            //     let body = self.parse_block()?;
+            //     self.consume("}")?;
+            //     Ok(Statement::While { condition_op, left, right, body })
+            // },
+
+            // "if" => {
+            //     self.consume("(")?;
+            //     let condition_op = self.tokens.next().ok_or("Expected op")?;
+            //     let left_str = self.tokens.next().ok_or("Expected reg")?;
+            //     let left = self.parse_register(&left_str)?;
+            //     if self.peek() == Some(&",".to_string()) { self.consume(",")?; } 
+            //     let right = self.parse_operand()?;
+            //     self.consume(")")?;
+            //     self.consume("{")?;
+            //     let then_block = self.parse_block()?;
+            //     self.consume("}")?;
+            //     let mut else_block = None;
+            //     if let Some(t) = self.peek() {
+            //         if t == "else" {
+            //             self.consume("else")?;
+            //             self.consume("{")?;
+            //             else_block = Some(self.parse_block()?);
+            //             self.consume("}")?;
+            //         }
+            //     }
+            //     Ok(Statement::If { condition_op, left, right, then_block, else_block })
+            // },
+
+            // "for" => {
+            //     self.consume("(")?;
+            //     let init = Box::new(self.parse_statement()?);
+            //     self.consume(";")?; 
+                
+            //     // --- Parse left register first, then the operator ---
+            //     let left_str = self.tokens.next().ok_or("Expected left register in comparison")?;
+            //     let mut cond_left = self.parse_register(&left_str)?;
+                
+            //     let raw_op = self.tokens.next().ok_or("Expected condition operator")?;
+                
+            //     if self.peek() == Some(&";".to_string()) || self.peek() == Some(&",".to_string()) { 
+            //         self.tokens.next(); 
+            //     }
+            //     let mut cond_right = self.parse_operand()?;
+            //     // ------------------------------------------------------------
+                
+            //     // Translate operator and check for hardware-required operand swap
+            //     let (condition_op, should_swap) = Self::translate_operator(&raw_op);
+            //     if should_swap {
+            //         if let Operand::Reg(right_reg) = cond_right {
+            //             cond_right = Operand::Reg(cond_left);
+            //             cond_left = right_reg;
+            //         } else {
+            //             return Err(format!("Operator '{}' requires comparison between two registers.", raw_op));
+            //         }
+            //     }
+                
+            //     self.consume(";")?; 
+            //     let step = Box::new(self.parse_statement()?);
+            //     self.consume(")")?;
+                
+            //     self.consume("{")?;
+            //     let body = self.parse_block()?;
+            //     self.consume("}")?;
+            //     Ok(Statement::For { init, condition_op, cond_left, cond_right, step, body })
+            // },
+
             "for" => {
                 self.consume("(")?;
                 let init = Box::new(self.parse_statement()?);
-                self.consume(",")?;
+                self.consume(";")?; 
                 
-                let condition_op = self.tokens.next().ok_or("Expected condition op")?;
-                let left_str = self.tokens.next().ok_or("Expected reg")?;
-                let cond_left = self.parse_register(&left_str)?;
-                if self.peek() == Some(&",".to_string()) { self.consume(",")?; }
-                let cond_right = self.parse_operand()?;
+                let left_str = self.tokens.next().ok_or("Expected left register in comparison")?;
+                let mut cond_left = self.parse_register(&left_str)?;
                 
-                self.consume(",")?;
+                let raw_op = self.tokens.next().ok_or("Expected condition operator")?;
+                
+                // --- CLEANED: Removed the old peek hack block entirely ---
+                let mut cond_right = self.parse_operand()?;
+                
+                // Translate operator and check for hardware-required operand swap
+                let (mut condition_op, should_swap) = Self::translate_operator(&raw_op);
+                if should_swap {
+                    // If the right side is a register, we can safely swap them for the hardware
+                    if let Operand::Reg(right_reg) = cond_right {
+                        cond_right = Operand::Reg(cond_left);
+                        cond_left = right_reg;
+                    } else {
+                        // --- FIXED: Immediate Value/Label Fallback ---
+                        // Do NOT swap the operands. Leave cond_left as the register.
+                        // Pass a pseudo-opcode like "sle" (less than or equal) or "sgt" (greater than)
+                        condition_op = match raw_op.as_str() {
+                            "<=" => "sle".to_string(),
+                            ">"  => "sgt".to_string(),
+                            _    => condition_op,
+                        };
+                    }
+                }
+                
+                self.consume(";")?; 
                 let step = Box::new(self.parse_statement()?);
                 self.consume(")")?;
                 
@@ -392,11 +536,37 @@ impl Parser {
 
             "while" => {
                 self.consume("(")?;
-                let condition_op = self.tokens.next().ok_or("Expected op")?;
+                
                 let left_str = self.tokens.next().ok_or("Expected reg")?;
-                let left = self.parse_register(&left_str)?;
+                let mut left = self.parse_register(&left_str)?;
+                let raw_op = self.tokens.next().ok_or("Expected op")?;
                 if self.peek() == Some(&",".to_string()) { self.consume(",")?; }
-                let right = self.parse_operand()?;
+                let mut right = self.parse_operand()?;
+                
+                // Translate operator and check for hardware-required operand swap
+                let (mut condition_op, should_swap) = Self::translate_operator(&raw_op);
+                // if should_swap {
+                //     if let Operand::Reg(right_reg) = right {
+                //         right = Operand::Reg(left);
+                //         left = right_reg;
+                //     } else {
+                //         return Err(format!("Operator '{}' requires comparison between two registers.", raw_op));
+                //     }
+                // }
+                if should_swap {
+                    if let Operand::Reg(right_reg) = right {
+                        right = Operand::Reg(left);
+                        left = right_reg;
+                    } else {
+                        // Immediate Value / Global Label Fallback
+                        condition_op = match raw_op.as_str() {
+                            "<=" => "sle".to_string(),
+                            ">"  => "sgt".to_string(),
+                            _    => condition_op,
+                        };
+                    }
+                }
+                
                 self.consume(")")?;
                 self.consume("{")?;
                 let body = self.parse_block()?;
@@ -406,11 +576,37 @@ impl Parser {
 
             "if" => {
                 self.consume("(")?;
-                let condition_op = self.tokens.next().ok_or("Expected op")?;
+                
                 let left_str = self.tokens.next().ok_or("Expected reg")?;
-                let left = self.parse_register(&left_str)?;
+                let mut left = self.parse_register(&left_str)?;
+                let raw_op = self.tokens.next().ok_or("Expected op")?;
                 if self.peek() == Some(&",".to_string()) { self.consume(",")?; } 
-                let right = self.parse_operand()?;
+                let mut right = self.parse_operand()?;
+                
+                // Translate operator and check for hardware-required operand swap
+                let (mut condition_op, should_swap) = Self::translate_operator(&raw_op);
+                // if should_swap {
+                //     if let Operand::Reg(right_reg) = right {
+                //         right = Operand::Reg(left);
+                //         left = right_reg;
+                //     } else {
+                //         return Err(format!("Operator '{}' requires comparison between two registers.", raw_op));
+                //     }
+                // }
+                if should_swap {
+                    if let Operand::Reg(right_reg) = right {
+                        right = Operand::Reg(left);
+                        left = right_reg;
+                    } else {
+                        // Immediate Value / Global Label Fallback
+                        condition_op = match raw_op.as_str() {
+                            "<=" => "sle".to_string(),
+                            ">"  => "sgt".to_string(),
+                            _    => condition_op,
+                        };
+                    }
+                }
+                
                 self.consume(")")?;
                 self.consume("{")?;
                 let then_block = self.parse_block()?;
@@ -554,7 +750,7 @@ impl Parser {
 }
 
 // ==========================================
-// 4. THE CODE GENERATOR
+// CODE GENERATOR
 // ==========================================
 
 struct Codegen {
@@ -670,7 +866,14 @@ impl Codegen {
                 writeln!(self.text_buffer, "{}:", start_label).unwrap();
 
                 let branch_opcode = match condition_op.as_str() {
-                    "beq" => "bne", "bne" => "beq", "blt" => "bge", "bge" => "blt", "slt" | "slti" => "bge", _ => "bne",
+                    "beq" => "bne", 
+                    "bne" => "beq", 
+                    "blt" => "bge", 
+                    "bge" => "blt", 
+                    "slt" | "slti" => "bge", 
+                    "sle" => "bgt", // Opposite of <= is >
+                    "sgt" => "ble", // Opposite of >  is <=,
+                    _ => "bne",
                 };
                 let right_op_str = self.prepare_comparison_operand(cond_right);
                 writeln!(self.text_buffer, "    {} {}, {}, {}", branch_opcode, Self::reg_name(cond_left), right_op_str, end_label).unwrap();
@@ -689,7 +892,10 @@ impl Codegen {
 
                 writeln!(self.text_buffer, "{}:", start_label).unwrap();
                 let branch_opcode = match condition_op.as_str() {
-                    "beq" => "bne", "bne" => "beq", "blt" => "bge", "bge" => "blt", "slt" => "bge", _ => "bne",
+                    "beq" => "bne", "bne" => "beq", "blt" => "bge", "bge" => "blt", "slt" => "bge", 
+                    "sle" => "bgt", // Opposite of <= is >
+                    "sgt" => "ble", // Opposite of >  is <=,
+                    _ => "bne",
                 };
                 let right_op_str = self.prepare_comparison_operand(right);
                 writeln!(self.text_buffer, "    {} {}, {}, {}", branch_opcode, Self::reg_name(left), right_op_str, end_label).unwrap();
@@ -706,7 +912,10 @@ impl Codegen {
 
                 let jump_target = if else_block.is_some() { &else_label } else { &end_label };
                 let branch_opcode = match condition_op.as_str() {
-                    "beq" => "bne", "bne" => "beq", "blt" => "bge", "bge" => "blt", "slt" => "bge", _ => "bne",
+                    "beq" => "bne", "bne" => "beq", "blt" => "bge", "bge" => "blt", "slt" => "bge", 
+                    "sle" => "bgt", // Opposite of <= is >
+                    "sgt" => "ble", // Opposite of >  is <=,
+                    _ => "bne",
                 };
                 let right_op_str = self.prepare_comparison_operand(right);
                 writeln!(self.text_buffer, "    {} {}, {}, {}", branch_opcode, Self::reg_name(left), right_op_str, jump_target).unwrap();
@@ -772,7 +981,7 @@ impl Codegen {
 }
 
 // ==========================================
-// 5. MAIN (PREPROCESSOR + DRIVER)
+// MAIN (PREPROCESSOR + DRIVER)
 // ==========================================
 
 fn resolve_import_path(base_dir: &Path, import_name: &str) -> Option<PathBuf> {
