@@ -103,7 +103,7 @@ fn main() {
     let output_ptr = 1   # Moves 1 into register a0  
     ret  
 }
-```alloy
+```
 
 #### **Global Data Allocations (data)**
 
